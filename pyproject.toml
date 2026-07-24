@@ -1,0 +1,109 @@
+[build-system]
+requires = [
+    "setuptools>=69",
+    "wheel",
+]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "graphora"
+version = "0.1.0"
+
+description = "A research framework for graph-based partitioning algorithms."
+readme = "README.md"
+
+requires-python = ">=3.11"
+
+authors = [
+    { name = "Mohsen Sahrayi", email = "m.sahrayi.a@gmail.com" },
+]
+
+license = { file = "LICENSE" }
+
+keywords = [
+    "graph",
+    "graph-partitioning",
+    "graph-clustering",
+    "community-detection",
+    "network-analysis",
+    "research",
+    "machine-learning",
+]
+
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+
+    "License :: OSI Approved :: MIT License",
+
+    "Operating System :: OS Independent",
+
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+include-package-data = true
+
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
+
+pythonpath = [
+    "src",
+]
+
+addopts = [
+    "-ra",
+    "--strict-markers",
+]
+
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "UP",
+    "B",
+]
+
+[tool.mypy]
+python_version = "3.11"
+
+strict = true
+
+warn_return_any = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+show_error_codes = true
+
+pretty = true
+
+show_column_numbers = true
