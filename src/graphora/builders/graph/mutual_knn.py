@@ -160,7 +160,7 @@ class MutualKNN(
             )
 
             selected.extend(
-                neighbors[: self.k]
+                neighbors[: self.k],
             )
 
 

@@ -6,23 +6,16 @@ from __future__ import annotations
 
 import warnings
 
-from typing import (
-    Generic,
-)
+from typing import Generic
 
 import numpy as np
 
 from sklearn.cluster import SpectralClustering
 
 from graphora.core.models import Graph
+from graphora.core.types import TId
 
-from .base_partition_detector import (
-    BasePartitionDetector,
-)
-
-from graphora.core.types import (
-    TId,
-)
+from .base_partition_detector import BasePartitionDetector
 
 
 class Spectral(
@@ -40,8 +33,7 @@ class Spectral(
         higher weight = stronger connection
 
 
-    Properties
-    ----------
+    Properties:
 
     - weighted
     - graph based
@@ -65,10 +57,6 @@ class Spectral(
         self.random_state = random_state
 
 
-    # --------------------------------------------------
-    # Detection
-    # --------------------------------------------------
-
     def _detect(
         self,
         graph: Graph[TId],
@@ -88,12 +76,16 @@ class Spectral(
                 }
             ]
 
+
         if self.n_clusters > graph.node_count:
             raise ValueError(
                 "n_clusters cannot exceed number of nodes."
             )
 
-        if graph.node_count <= self.n_clusters:
+
+        # If every node should be its own cluster,
+        # avoid unnecessary sklearn execution.
+        if graph.node_count == self.n_clusters:
             return [
                 {
                     node,
@@ -126,15 +118,13 @@ class Spectral(
                 category=UserWarning,
             )
 
+
             labels = model.fit_predict(
                 affinity,
             )
 
 
-        partitions: dict[
-            int,
-            set[TId],
-        ] = {}
+        partitions: dict[int, set[TId]] = {}
 
 
         for node, label in zip(
@@ -150,14 +140,14 @@ class Spectral(
             )
 
 
-        return list(
+        return sorted(
             partitions.values(),
+            key=lambda partition: min(
+                str(node)
+                for node in partition
+            ),
         )
 
-
-    # --------------------------------------------------
-    # Helpers
-    # --------------------------------------------------
 
     def _build_affinity_matrix(
         self,
@@ -195,13 +185,16 @@ class Spectral(
                 continue
 
 
-            source = index[
-                edge.source
-            ]
+            if edge.weight < 0:
+                raise ValueError(
+                    "Spectral clustering requires "
+                    "non-negative affinity weights."
+                )
 
-            target = index[
-                edge.target
-            ]
+
+            source = index[edge.source]
+
+            target = index[edge.target]
 
 
             matrix[

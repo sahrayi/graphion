@@ -7,7 +7,10 @@ from __future__ import annotations
 from typing import Generic
 
 import numpy as np
-from sklearn.decomposition import TruncatedSVD as SklearnTruncatedSVD
+
+from sklearn.decomposition import (
+    TruncatedSVD as SklearnTruncatedSVD,
+)
 
 from graphora.core.types import TId
 
@@ -28,11 +31,12 @@ class TruncatedSVD(
     Reduces high-dimensional feature vectors
     using truncated singular value decomposition.
 
-    Supports:
+    Suitable for:
 
     - dense numerical vectors
     - sparse-friendly reduction
     - large dimensional feature spaces
+
 
     Example:
 
@@ -44,6 +48,12 @@ class TruncatedSVD(
             v
         (256,)
 
+    Notes:
+
+    output_dimension must be smaller than
+    min(number_of_samples, number_of_features)
+    because TruncatedSVD does not support a
+    full-rank decomposition.
     """
 
     def __init__(
@@ -55,21 +65,32 @@ class TruncatedSVD(
         **kwargs,
     ) -> None:
 
+        if output_dimension <= 0:
+            raise ValueError(
+                "output_dimension must be "
+                "greater than zero."
+            )
+
+        if n_iter <= 0:
+            raise ValueError(
+                "n_iter must be greater "
+                "than zero."
+            )
+
         super().__init__(
             output_dimension=output_dimension,
             **kwargs,
         )
 
-        if n_iter <= 0:
-            raise ValueError(
-                "n_iter must be greater than zero."
-            )
+        self.n_iter = n_iter
+        self.random_state = random_state
 
         self.model = SklearnTruncatedSVD(
             n_components=output_dimension,
             n_iter=n_iter,
             random_state=random_state,
         )
+
 
     def reduce_features(
         self,
@@ -87,18 +108,21 @@ class TruncatedSVD(
         Steps:
 
         1. Convert features into matrix.
-        2. Fit SVD model.
-        3. Transform features.
-        4. Convert result into immutable tuples.
+        2. Validate dimensions.
+        3. Fit SVD model.
+        4. Transform features.
+        5. Convert result into immutable tuples.
         """
 
         if not features:
             return ()
 
+
         matrix = np.asarray(
             features,
             dtype=float,
         )
+
 
         if matrix.ndim != 2:
             raise ValueError(
@@ -106,17 +130,46 @@ class TruncatedSVD(
                 "a 2-dimensional feature matrix."
             )
 
-        if self.output_dimension >= min(
+
+        if matrix.shape[0] == 0:
+            return ()
+
+
+        if matrix.shape[1] == 0:
+            raise ValueError(
+                "Feature dimension cannot be zero."
+            )
+
+
+        if not np.isfinite(
+            matrix,
+        ).all():
+
+            raise ValueError(
+                "Features contain NaN or infinite values."
+            )
+
+
+        max_components = min(
             matrix.shape,
-        ):
+        )
+
+
+        if self.output_dimension >= max_components:
+
             raise ValueError(
                 "output_dimension must be smaller "
-                "than min(samples, features)."
+                "than min(number of samples, "
+                "number of features). "
+                f"Received {self.output_dimension}, "
+                f"maximum allowed is {max_components - 1}."
             )
+
 
         reduced = self.model.fit_transform(
             matrix,
         )
+
 
         return tuple(
             tuple(

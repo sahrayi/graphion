@@ -6,22 +6,15 @@ from __future__ import annotations
 
 import importlib
 
-from collections.abc import Hashable
-
-from typing import (
-    Generic,
-    TypeVar,
-)
+from typing import Generic
 
 from graphora.core.models import Graph
+from graphora.core.types import TId
 
 from .base_partition_detector import (
     BasePartitionDetector,
 )
 
-from graphora.core.types import (
-    TId,
-)
 
 class Infomap(
     BasePartitionDetector[TId],
@@ -35,12 +28,10 @@ class Infomap(
 
     Edge weights are interpreted as affinity.
 
-
     Supported topology:
 
     - directed
     - undirected
-
 
     Properties:
 
@@ -48,8 +39,8 @@ class Infomap(
     - flow based
     - stochastic
     - reproducible with seed
-    - suitable for sparse graphs
     """
+
 
     def __init__(
         self,
@@ -61,10 +52,6 @@ class Infomap(
         self.two_level = two_level
         self.seed = seed
 
-
-    # --------------------------------------------------
-    # Capability
-    # --------------------------------------------------
 
     @property
     def supports_directed(
@@ -81,10 +68,6 @@ class Infomap(
 
         return True
 
-
-    # --------------------------------------------------
-    # Detection
-    # --------------------------------------------------
 
     def _detect(
         self,
@@ -176,6 +159,9 @@ class Infomap(
         ] = {}
 
 
+        assigned_nodes: set[TId] = set()
+
+
         for node_id, module_id in result.modules().items():
 
             original_id = reverse_mapping.get(
@@ -195,6 +181,29 @@ class Infomap(
             )
 
 
+            assigned_nodes.add(
+                original_id,
+            )
+
+
+        # Preserve isolated or missing nodes.
+        #
+        # Infomap may omit nodes that do not
+        # participate in flow.
+        #
+        # Graphora detectors must return a
+        # complete partition of graph.nodes.
+        for node in graph.nodes:
+
+            if node not in assigned_nodes:
+
+                partitions[
+                    self._singleton_module_id(node)
+                ] = {
+                    node,
+                }
+
+
         return [
             partition
             for _, partition
@@ -203,3 +212,21 @@ class Infomap(
                 key=lambda item: item[0],
             )
         ]
+
+
+    def _singleton_module_id(
+        self,
+        node: TId,
+    ) -> int:
+        """
+        Create deterministic singleton module id.
+
+        Negative ids avoid collisions with
+        Infomap generated module ids.
+        """
+
+        return -(
+            abs(
+                hash(node)
+            )
+        )

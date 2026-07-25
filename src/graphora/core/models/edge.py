@@ -17,11 +17,24 @@ class Edge(Generic[TId]):
     """
     Immutable graph edge.
 
-    An edge belongs to a Graph and represents the graph topology
-    consumed by graph partitioning algorithms.
+    An edge represents a connection between two nodes in a Graphora graph.
 
-    The meaning of ``weight`` depends on the GraphBuilder that
-    produced the graph.
+    Parameters
+    ----------
+    source:
+        Identifier of the source node.
+
+    target:
+        Identifier of the target node.
+
+    weight:
+        Numeric edge weight.
+
+    Notes
+    -----
+    The interpretation of ``weight`` depends on the GraphBuilder
+    that created the graph. It may represent similarity, distance,
+    capacity, or another domain-specific value.
     """
 
     source: TId
@@ -31,8 +44,17 @@ class Edge(Generic[TId]):
     def __post_init__(self) -> None:
         """
         Validate edge invariants.
+
+        Raises
+        ------
+        InvalidEdgeError
+            If endpoints are missing or weight is not finite.
         """
+        if self.source is None:
+            raise InvalidEdgeError("Edge source cannot be None.")
+
+        if self.target is None:
+            raise InvalidEdgeError("Edge target cannot be None.")
+
         if not isfinite(self.weight):
-            raise InvalidEdgeError(
-                "Edge weight must be a finite number."
-            )
+            raise InvalidEdgeError("Edge weight must be a finite number.")

@@ -31,8 +31,17 @@ class Relation(Generic[TId]):
     def __post_init__(self) -> None:
         """
         Validate relation invariants.
+
+        Raises
+        ------
+        InvalidRelationError
+            If endpoints are missing or weight is not finite.
         """
+        if self.source is None:
+            raise InvalidRelationError("Relation source cannot be None.")
+
+        if self.target is None:
+            raise InvalidRelationError("Relation target cannot be None.")
+
         if not isfinite(self.weight):
-            raise InvalidRelationError(
-                "Relation weight must be a finite number."
-            )
+            raise InvalidRelationError("Relation weight must be a finite number.")

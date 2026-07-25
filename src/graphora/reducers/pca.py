@@ -4,19 +4,15 @@ Principal Component Analysis reducer.
 
 from __future__ import annotations
 
-from collections.abc import Hashable
-from typing import Generic, TypeVar
-
 import numpy as np
+
+from typing import Generic
+
 from sklearn.decomposition import PCA as SKLearnPCA
 
-from graphora.core.models import FeatureSet
+from graphora.core.types import TId
 
 from .base_reducer import BaseReducer
-
-from graphora.core.types import (
-    TId,
-)
 
 
 class PCA(
@@ -43,6 +39,12 @@ class PCA(
             v
         (128,)
 
+    Properties:
+
+    - linear dimensionality reduction
+    - deterministic
+    - preserves maximum variance
+    - suitable for dense numerical features
     """
 
     def __init__(
@@ -59,11 +61,17 @@ class PCA(
             **kwargs,
         )
 
+        if output_dimension <= 0:
+            raise ValueError(
+                "output_dimension must be greater than zero."
+            )
+
         self.model = SKLearnPCA(
             n_components=output_dimension,
             whiten=whiten,
             random_state=random_state,
         )
+
 
     def reduce_features(
         self,
@@ -80,37 +88,64 @@ class PCA(
 
         Steps:
 
-        1. Convert FeatureSet features to numpy matrix.
-        2. Fit PCA model.
-        3. Transform features.
-        4. Convert result back to immutable tuples.
+        1. Convert feature vectors into numpy matrix.
+        2. Validate input dimensions.
+        3. Fit PCA model.
+        4. Transform features.
+        5. Convert result back to immutable tuples.
         """
+
+        if not features:
+            return ()
+
 
         matrix = np.asarray(
             features,
             dtype=float,
         )
 
+
         if matrix.ndim != 2:
             raise ValueError(
                 "PCA requires a 2-dimensional feature matrix."
             )
 
-        if self.output_dimension > matrix.shape[1]:
+
+        if matrix.shape[0] == 0:
+            return ()
+
+
+        if matrix.shape[1] == 0:
             raise ValueError(
-                "output_dimension cannot be greater "
-                "than input feature dimension."
+                "PCA cannot reduce empty feature vectors."
             )
 
-        if self.output_dimension > matrix.shape[0]:
+
+        if not np.isfinite(matrix).all():
+            raise ValueError(
+                "features contain NaN or infinite values."
+            )
+
+
+        max_components = min(
+            matrix.shape[0],
+            matrix.shape[1],
+        )
+
+
+        if self.output_dimension > max_components:
+
             raise ValueError(
                 "output_dimension cannot be greater "
-                "than number of samples."
+                "than min(number of samples, "
+                "input feature dimension)."
             )
+
 
         reduced = self.model.fit_transform(
             matrix,
         )
+
 
         return tuple(
             tuple(

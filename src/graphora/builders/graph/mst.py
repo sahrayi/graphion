@@ -4,16 +4,12 @@ Minimum Spanning Tree graph construction algorithm.
 
 from __future__ import annotations
 
-from collections.abc import Hashable
-from typing import Generic, TypeVar
+from typing import Generic
 
 from graphora.core.models import Edge
+from graphora.core.types import TId
 
 from .base_graph_builder import BaseGraphBuilder
-
-from graphora.core.types import (
-    TId
-)
 
 
 class MST(
@@ -23,90 +19,82 @@ class MST(
     """
     Minimum Spanning Tree graph construction.
 
-    Builds an undirected MST from affinity edges.
+    Builds an undirected minimum spanning tree
+    from affinity edges.
 
     Edge weights represent affinity:
 
         higher weight = stronger relation
 
-
     Kruskal internally minimizes:
 
         cost = 1 - affinity
 
-
     Properties:
 
-    - always undirected
-    - deterministic
     - parameter free
+    - undirected
+    - deterministic
     - sparse
 
-    If input graph is disconnected,
-    returns a minimum spanning forest.
+    If the input graph is disconnected,
+    the result is a minimum spanning forest.
     """
 
     def __init__(
         self,
         **kwargs,
     ) -> None:
-
         super().__init__(
             directed=False,
             **kwargs,
         )
-
 
     def filter_edges(
         self,
         edges: list[Edge[TId]],
     ) -> list[Edge[TId]]:
         """
-        Build MST using Kruskal algorithm.
+        Build a minimum spanning tree using
+        Kruskal's algorithm.
 
         Pipeline:
 
         1. Remove self loops.
-        2. Collapse directed edges into undirected candidates.
-        3. Sort by affinity cost.
+        2. Collapse directed duplicates.
+        3. Sort by Kruskal cost.
         4. Apply union-find.
+        5. Return deterministic forest.
         """
 
-        edges = self.remove_self_loops(
-            edges,
-        )
+        edges = self.remove_self_loops(edges)
 
-        edges = self._build_undirected_candidates(
-            edges,
-        )
+        # Collapse A->B and B->A into a single
+        # undirected candidate while keeping the
+        # strongest affinity.
+        edges = self.make_symmetric(edges)
 
         edges.sort(
             key=lambda edge: (
                 self._cost(edge.weight),
-                str(edge.source),
-                str(edge.target),
-            )
+                self.sort_key(edge.source),
+                self.sort_key(edge.target),
+            ),
         )
 
+        nodes = self._extract_nodes(edges)
 
-        nodes = self._extract_nodes(
-            edges,
-        )
-
-
-        parent = {
+        parent: dict[TId, TId] = {
             node: node
             for node in nodes
         }
 
-        rank = {
+        rank: dict[TId, int] = {
             node: 0
             for node in nodes
         }
 
-
-        mst: list[Edge[TId]] = []
-
+        forest: list[Edge[TId]] = []
 
         for edge in edges:
 
@@ -120,10 +108,8 @@ class MST(
                 edge.target,
             )
 
-
             if root_source == root_target:
                 continue
-
 
             self._union(
                 parent,
@@ -132,111 +118,31 @@ class MST(
                 root_target,
             )
 
-
-            mst.append(
-                edge,
-            )
-
+            forest.append(edge)
 
         return sorted(
-            mst,
+            forest,
             key=lambda edge: (
-                str(edge.source),
-                str(edge.target),
+                self.sort_key(edge.source),
+                self.sort_key(edge.target),
             ),
         )
-
-
-    def _build_undirected_candidates(
-        self,
-        edges: list[Edge[TId]],
-    ) -> list[Edge[TId]]:
-        """
-        Collapse directed affinity edges.
-
-        Example:
-
-            A -> B (0.8)
-            B -> A (0.9)
-
-
-        becomes:
-
-            A -- B (0.9)
-        """
-
-        weights: dict[
-            tuple[TId, TId],
-            float,
-        ] = {}
-
-
-        for edge in edges:
-
-            pair = self._normalize_pair(
-                edge.source,
-                edge.target,
-            )
-
-            current = weights.get(
-                pair,
-            )
-
-
-            if (
-                current is None
-                or edge.weight > current
-            ):
-                weights[pair] = edge.weight
-
-
-        return [
-            Edge(
-                source=source,
-                target=target,
-                weight=weight,
-            )
-            for (
-                source,
-                target,
-            ), weight in sorted(
-                weights.items(),
-                key=lambda item: (
-                    str(item[0][0]),
-                    str(item[0][1]),
-                ),
-            )
-        ]
-
-
-    def _normalize_pair(
-        self,
-        source: TId,
-        target: TId,
-    ) -> tuple[TId, TId]:
-        """
-        Deterministic undirected ordering.
-        """
-
-        if str(source) <= str(target):
-
-            return (
-                source,
-                target,
-            )
-
-        return (
-            target,
-            source,
-        )
-
 
     def _cost(
         self,
         affinity: float,
     ) -> float:
         """
-        Convert affinity to Kruskal cost.
+        Convert affinity score to Kruskal cost.
+
+        Since Graphora uses affinity where:
+
+            higher = stronger relation
+
+        Kruskal requires minimizing cost,
+        therefore:
+
+            cost = 1 - affinity
         """
 
         return 1.0 - affinity
@@ -248,7 +154,10 @@ class MST(
         node: TId,
     ) -> TId:
         """
-        Find set representative.
+        Find the representative of a set.
+
+        Uses path compression to reduce the
+        amortized complexity of union-find.
         """
 
         if parent[node] != node:
@@ -269,7 +178,10 @@ class MST(
         root_b: TId,
     ) -> None:
         """
-        Merge two sets using rank.
+        Merge two disjoint sets.
+
+        Uses union by rank to keep the
+        internal tree shallow.
         """
 
         if rank[root_a] < rank[root_b]:
@@ -285,4 +197,5 @@ class MST(
         else:
 
             parent[root_b] = root_a
+
             rank[root_a] += 1

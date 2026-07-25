@@ -5,16 +5,13 @@ Shared Nearest Neighbor graph construction algorithm.
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Hashable
-from typing import Generic, TypeVar
+from collections.abc import Iterable
+from typing import Generic
 
 from graphora.core.models import Edge
+from graphora.core.types import TId
 
 from .base_graph_builder import BaseGraphBuilder
-
-from graphora.core.types import (
-    TId,
-)
 
 
 class SNN(
@@ -34,11 +31,9 @@ class SNN(
             ----------------
             |N(A) ∪ N(B)|
 
-
     where:
 
         N(X) = k nearest neighbors of X
-
 
     Properties:
 
@@ -55,7 +50,6 @@ class SNN(
         weighted: bool = False,
         **kwargs,
     ) -> None:
-
         super().__init__(
             directed=False,
             **kwargs,
@@ -69,6 +63,8 @@ class SNN(
         self.k = k
         self.weighted = weighted
 
+        # Deterministic ordering cache.
+        self._node_order: dict[TId, int] = {}
 
     def filter_edges(
         self,
@@ -81,23 +77,19 @@ class SNN(
 
         1. Remove self loops.
         2. Merge duplicate affinities.
-        3. Build local kNN neighborhoods.
-        4. Generate candidate pairs.
-        5. Compute shared-neighbor similarity.
-        6. Return undirected edges.
+        3. Build deterministic node ordering.
+        4. Build local kNN neighborhoods.
+        5. Generate candidate pairs.
+        6. Compute shared-neighbor similarity.
+        7. Return symmetric graph.
         """
 
-        edges = self.remove_self_loops(
-            edges,
-        )
+        edges = self.remove_self_loops(edges)
+        edges = self.merge_duplicates(edges)
 
-        edges = self.merge_duplicates(
-            edges,
-        )
+        self._build_node_order(edges)
 
-        neighbors = self._build_neighbors(
-            edges,
-        )
+        neighbors = self._build_neighbors(edges)
 
         candidates = self._build_candidate_pairs(
             neighbors,
@@ -105,14 +97,15 @@ class SNN(
 
         result: list[Edge[TId]] = []
 
-
-        for source, target in sorted(
+        sorted_candidates = sorted(
             candidates,
             key=lambda pair: (
-                str(pair[0]),
-                str(pair[1]),
+                self._node_order[pair[0]],
+                self._node_order[pair[1]],
             ),
-        ):
+        )
+
+        for source, target in sorted_candidates:
 
             weight = self._shared_weight(
                 source,
@@ -123,7 +116,6 @@ class SNN(
             if weight <= 0:
                 continue
 
-
             result.append(
                 Edge(
                     source=source,
@@ -132,15 +124,9 @@ class SNN(
                 )
             )
 
+        result = self.make_symmetric(result)
 
-        return sorted(
-            result,
-            key=lambda edge: (
-                str(edge.source),
-                str(edge.target),
-            ),
-        )
-
+        return self._sort_edges(result)
 
     def _build_neighbors(
         self,
@@ -157,18 +143,11 @@ class SNN(
             list[Edge[TId]],
         ] = defaultdict(list)
 
-
         for edge in edges:
 
-            adjacency[
-                edge.source
-            ].append(
-                edge,
-            )
+            adjacency[edge.source].append(edge)
 
-            adjacency[
-                edge.target
-            ].append(
+            adjacency[edge.target].append(
                 Edge(
                     source=edge.target,
                     target=edge.source,
@@ -176,55 +155,47 @@ class SNN(
                 )
             )
 
-
         neighbors: dict[
             TId,
             list[TId],
         ] = {}
 
-
-        for node in sorted(
-            adjacency,
-            key=str,
+        for node in self._sort_nodes(
+            adjacency.keys(),
         ):
 
             ranked = sorted(
                 adjacency[node],
                 key=lambda edge: (
                     -edge.weight,
-                    str(edge.target),
+                    self._node_order[edge.target],
                 ),
             )
-
 
             neighbors[node] = [
                 edge.target
                 for edge in ranked[: self.k]
             ]
 
-
         return neighbors
-
 
     def _build_candidate_pairs(
         self,
         neighbors: dict[TId, list[TId]],
     ) -> set[tuple[TId, TId]]:
         """
-        Build undirected candidate pairs from kNN neighborhoods.
+        Build symmetric candidate pairs.
 
         A pair is considered if at least one node
-        selects the other as a neighbor.
+        selects the other as a nearest neighbor.
         """
 
         pairs: set[
             tuple[TId, TId]
         ] = set()
 
-
-        for source in sorted(
-            neighbors,
-            key=str,
+        for source in self._sort_nodes(
+            neighbors.keys(),
         ):
 
             for target in neighbors[source]:
@@ -239,9 +210,7 @@ class SNN(
                     )
                 )
 
-
         return pairs
-
 
     def _shared_weight(
         self,
@@ -254,13 +223,11 @@ class SNN(
         """
 
         if self.weighted:
-
             return self._weighted_shared_score(
                 source,
                 target,
                 neighbors,
             )
-
 
         source_neighbors = set(
             neighbors.get(
@@ -276,17 +243,14 @@ class SNN(
             )
         )
 
-
         union = (
             source_neighbors
             |
             target_neighbors
         )
 
-
         if not union:
             return 0.0
-
 
         intersection = (
             source_neighbors
@@ -294,13 +258,11 @@ class SNN(
             target_neighbors
         )
 
-
         return (
             len(intersection)
             /
             len(union)
         )
-
 
     def _weighted_shared_score(
         self,
@@ -309,7 +271,7 @@ class SNN(
         neighbors: dict[TId, list[TId]],
     ) -> float:
         """
-        Compute rank weighted SNN similarity.
+        Compute rank-weighted shared-neighbor similarity.
         """
 
         source_rank = {
@@ -322,7 +284,6 @@ class SNN(
             )
         }
 
-
         target_rank = {
             node: rank
             for rank, node in enumerate(
@@ -333,20 +294,16 @@ class SNN(
             )
         }
 
-
         shared = (
             set(source_rank)
             &
             set(target_rank)
         )
 
-
         if not shared:
             return 0.0
 
-
         score = 0.0
-
 
         for node in shared:
 
@@ -362,18 +319,15 @@ class SNN(
                 target_rank[node]
             )
 
-
             score += min(
                 source_score,
                 target_score,
             )
 
-
         size = min(
             len(source_rank),
             len(target_rank),
         )
-
 
         normalization = (
             size
@@ -383,13 +337,40 @@ class SNN(
             2
         )
 
-
         if normalization == 0:
             return 0.0
 
-
         return score / normalization
 
+    def _build_node_order(
+        self,
+        edges: list[Edge[TId]],
+    ) -> None:
+        """
+        Build deterministic node ordering.
+
+        Ordering is computed once and reused
+        throughout the algorithm to avoid
+        repeated string comparisons.
+        """
+
+        nodes: set[TId] = set()
+
+        for edge in edges:
+            nodes.add(edge.source)
+            nodes.add(edge.target)
+
+        ordered = sorted(
+            nodes,
+            key=self.sort_key,
+        )
+
+        self._node_order = {
+            node: index
+            for index, node in enumerate(
+                ordered,
+            )
+        }
 
     def _normalize_pair(
         self,
@@ -400,8 +381,10 @@ class SNN(
         Normalize undirected edge ordering.
         """
 
-        if str(source) <= str(target):
-
+        if (
+            self._node_order[source]
+            <= self._node_order[target]
+        ):
             return (
                 source,
                 target,
@@ -410,4 +393,33 @@ class SNN(
         return (
             target,
             source,
+        )
+
+    def _sort_nodes(
+        self,
+        nodes: Iterable[TId],
+    ) -> list[TId]:
+        """
+        Return nodes in deterministic order.
+        """
+
+        return sorted(
+            nodes,
+            key=lambda node: self._node_order[node],
+        )
+
+    def _sort_edges(
+        self,
+        edges: list[Edge[TId]],
+    ) -> list[Edge[TId]]:
+        """
+        Return edges in deterministic order.
+        """
+
+        return sorted(
+            edges,
+            key=lambda edge: (
+                self._node_order[edge.source],
+                self._node_order[edge.target],
+            ),
         )

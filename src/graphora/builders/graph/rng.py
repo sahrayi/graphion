@@ -4,22 +4,16 @@ Relative Neighborhood Graph construction algorithm.
 
 from __future__ import annotations
 
-from collections.abc import Hashable
-from typing import Generic, TypeVar
+from collections import defaultdict
+from typing import Generic
 
 from graphora.core.models import Edge
+from graphora.core.types import TId
 
 from .base_graph_builder import BaseGraphBuilder
 
-from graphora.core.types import (
-    TId
-)
 
-
-class RNG(
-    BaseGraphBuilder[TId],
-    Generic[TId],
-):
+class RNG(BaseGraphBuilder[TId], Generic[TId]):
     """
     Relative Neighborhood Graph.
 
@@ -30,7 +24,6 @@ class RNG(
 
         higher affinity = closer
 
-
     Edge (A,B) survives iff there is no C such that:
 
         affinity(A,C) > affinity(A,B)
@@ -38,7 +31,6 @@ class RNG(
     and:
 
         affinity(B,C) > affinity(A,B)
-
 
     Properties:
 
@@ -48,21 +40,11 @@ class RNG(
     - deterministic
     """
 
-    def __init__(
-        self,
-        **kwargs,
-    ) -> None:
+    def __init__(self, **kwargs) -> None:
+        super().__init__(directed=False, **kwargs)
+        self._node_order: dict[TId, int] = {}
 
-        super().__init__(
-            directed=False,
-            **kwargs,
-        )
-
-
-    def filter_edges(
-        self,
-        edges: list[Edge[TId]],
-    ) -> list[Edge[TId]]:
+    def filter_edges(self, edges: list[Edge[TId]]) -> list[Edge[TId]]:
         """
         Apply RNG filtering.
 
@@ -70,143 +52,124 @@ class RNG(
 
         1. Remove self loops.
         2. Merge undirected duplicate edges.
-        3. Apply RNG criterion.
-        4. Return symmetric edges.
+        3. Build node ordering.
+        4. Build adjacency index.
+        5. Apply RNG criterion.
+        6. Return symmetric edges.
         """
+        edges = self.remove_self_loops(edges)
+        edges = self.merge_duplicates(edges)
 
-        edges = self.remove_self_loops(
-            edges,
-        )
+        self._build_node_order(edges)
 
-        edges = self.merge_duplicates(
-            edges,
-        )
+        adjacency: dict[tuple[TId, TId], float] = {}
+        neighbors_map: dict[TId, set[TId]] = defaultdict(set)
 
+        for edge in edges:
+            source = edge.source
+            target = edge.target
 
-        adjacency = {
-            self._edge_key(
-                edge.source,
-                edge.target,
-            ): edge.weight
-            for edge in edges
-        }
-
-
-        nodes = self._extract_nodes(
-            edges,
-        )
-
+            adjacency[self._edge_key(source, target)] = edge.weight
+            neighbors_map[source].add(target)
+            neighbors_map[target].add(source)
 
         kept: list[Edge[TId]] = []
 
-
-        for edge in sorted(
-            edges,
-            key=lambda edge: (
-                str(edge.source),
-                str(edge.target),
-            ),
-        ):
+        for edge in self._sort_edges(edges):
+            common_neighbors = neighbors_map[edge.source].intersection(
+                neighbors_map[edge.target]
+            )
 
             if self._is_relative_neighbor(
-                edge.source,
-                edge.target,
-                edge.weight,
-                adjacency,
-                nodes,
+                source=edge.source,
+                target=edge.target,
+                weight=edge.weight,
+                adjacency=adjacency,
+                candidates=common_neighbors,
             ):
-
-                kept.append(
-                    edge,
-                )
-
+                kept.append(edge)
 
         # Base contract:
         # undirected graph must have
         # symmetric edges.
+        kept = self.make_symmetric(kept)
 
-        kept = self.make_symmetric(
-            kept,
-        )
-
-
-        return sorted(
-            kept,
-            key=lambda edge: (
-                str(edge.source),
-                str(edge.target),
-            ),
-        )
-
+        return self._sort_edges(kept)
 
     def _is_relative_neighbor(
         self,
         source: TId,
         target: TId,
         weight: float,
-        adjacency: dict[
-            tuple[TId, TId],
-            float,
-        ],
-        nodes: list[TId],
+        adjacency: dict[tuple[TId, TId], float],
+        candidates: set[TId],
     ) -> bool:
         """
         Check RNG lune criterion.
+
+        A candidate removes the edge if it has
+        stronger affinity with both endpoints.
         """
-
-        for candidate in nodes:
-
-            if (
-                candidate == source
-                or candidate == target
-            ):
-                continue
-
-
-            source_candidate = adjacency.get(
-                self._edge_key(
-                    source,
-                    candidate,
-                )
-            )
-
-            target_candidate = adjacency.get(
-                self._edge_key(
-                    target,
-                    candidate,
-                )
-            )
-
+        for candidate in candidates:
+            source_weight = adjacency.get(self._edge_key(source, candidate))
+            target_weight = adjacency.get(self._edge_key(target, candidate))
 
             if (
-                source_candidate is not None
-                and target_candidate is not None
-                and source_candidate > weight
-                and target_candidate > weight
+                source_weight is not None
+                and target_weight is not None
+                and source_weight > weight
+                and target_weight > weight
             ):
                 return False
 
-
         return True
 
+    def _build_node_order(self, edges: list[Edge[TId]]) -> None:
+        """
+        Build deterministic node ordering.
 
-    def _edge_key(
-        self,
-        source: TId,
-        target: TId,
-    ) -> tuple[TId, TId]:
+        This avoids repeated string conversion
+        inside the RNG inner loop.
+        """
+        nodes: set[TId] = set()
+
+        for edge in edges:
+            nodes.add(edge.source)
+            nodes.add(edge.target)
+
+        ordered_nodes = sorted(nodes, key=str)
+
+        self._node_order = {
+            node: index for index, node in enumerate(ordered_nodes)
+        }
+
+    def _edge_key(self, source: TId, target: TId) -> tuple[TId, TId]:
         """
         Normalize undirected edge ordering.
+
+        Uses precomputed deterministic node
+        ordering for fast lookup.
         """
+        if self._node_order[source] <= self._node_order[target]:
+            return (source, target)
 
-        if str(source) <= str(target):
+        return (target, source)
 
-            return (
-                source,
-                target,
+    @staticmethod
+    def _sort_edges(edges: list[Edge[TId]]) -> list[Edge[TId]]:
+        """
+        Deterministic edge sorting.
+
+        Prefer native ordering when available,
+        otherwise fall back to string ordering.
+        """
+        try:
+            return sorted(
+                edges,
+                key=lambda edge: (edge.source, edge.target),
             )
-
-        return (
-            target,
-            source,
-        )
+        except TypeError:
+            return sorted(
+                edges,
+                key=lambda edge: (str(edge.source), str(edge.target)),
+            )

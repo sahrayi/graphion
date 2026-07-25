@@ -25,18 +25,19 @@ class Autoencoder(
     """
     Neural network based dimensionality reduction.
 
-    Learns a nonlinear latent representation
+    Learns nonlinear latent representation
     using an autoencoder architecture.
 
     Requires:
 
         pip install torch
 
+
     Suitable for:
 
     - dense embeddings
     - nonlinear feature spaces
-    - learned representations
+    - learned graph representations
     """
 
     def __init__(
@@ -48,39 +49,54 @@ class Autoencoder(
         batch_size: int = 32,
         learning_rate: float = 1e-3,
         random_state: int | None = 42,
+        normalize_output: bool = True,
     ) -> None:
 
         super().__init__(
             output_dimension=output_dimension,
         )
 
+
         if hidden_dimension <= 0:
             raise ValueError(
                 "hidden_dimension must be greater than zero."
             )
+
 
         if epochs <= 0:
             raise ValueError(
                 "epochs must be greater than zero."
             )
 
+
         if batch_size <= 0:
             raise ValueError(
                 "batch_size must be greater than zero."
             )
+
 
         if learning_rate <= 0:
             raise ValueError(
                 "learning_rate must be greater than zero."
             )
 
+
+        if output_dimension <= 0:
+            raise ValueError(
+                "output_dimension must be greater than zero."
+            )
+
+
         self.hidden_dimension = hidden_dimension
         self.epochs = epochs
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.random_state = random_state
+        self.normalize_output = normalize_output
+
 
         self._load_dependencies()
+
 
     def _load_dependencies(
         self,
@@ -90,8 +106,10 @@ class Autoencoder(
         """
 
         try:
+
             import torch
             import torch.nn as nn
+
 
         except ImportError as exc:
 
@@ -101,8 +119,10 @@ class Autoencoder(
                 "Install with: pip install torch"
             ) from exc
 
+
         self._torch = torch
         self._nn = nn
+
 
     def reduce_features(
         self,
@@ -115,8 +135,10 @@ class Autoencoder(
         if not features:
             return ()
 
+
         torch = self._torch
         nn = self._nn
+
 
         if self.random_state is not None:
 
@@ -124,52 +146,93 @@ class Autoencoder(
                 self.random_state,
             )
 
+
         data = torch.tensor(
             features,
             dtype=torch.float32,
         )
 
+
+        if data.ndim != 2:
+
+            raise ValueError(
+                "features must be a 2D matrix."
+            )
+
+
         input_dimension = data.shape[1]
 
+
+        if self.output_dimension >= input_dimension:
+
+            raise ValueError(
+                "output_dimension must be "
+                "smaller than input dimension."
+            )
+
+
+        hidden_dimension = self.hidden_dimension
+
+
+        if hidden_dimension >= input_dimension:
+
+            hidden_dimension = max(
+                self.output_dimension * 2,
+                input_dimension // 2,
+            )
+
+
         encoder = nn.Sequential(
+
             nn.Linear(
                 input_dimension,
-                self.hidden_dimension,
+                hidden_dimension,
             ),
+
             nn.ReLU(),
+
             nn.Linear(
-                self.hidden_dimension,
+                hidden_dimension,
                 self.output_dimension,
             ),
         )
 
+
         decoder = nn.Sequential(
+
             nn.Linear(
                 self.output_dimension,
-                self.hidden_dimension,
+                hidden_dimension,
             ),
+
             nn.ReLU(),
+
             nn.Linear(
-                self.hidden_dimension,
+                hidden_dimension,
                 input_dimension,
             ),
         )
+
 
         class Model(
             nn.Module,
         ):
+
             def __init__(
                 self,
             ):
+
                 super().__init__()
 
                 self.encoder = encoder
                 self.decoder = decoder
 
+
             def forward(
                 self,
                 x,
             ):
+
                 latent = self.encoder(
                     x,
                 )
@@ -180,57 +243,107 @@ class Autoencoder(
 
                 return reconstructed
 
+
         model = Model()
+
 
         optimizer = torch.optim.Adam(
             model.parameters(),
             lr=self.learning_rate,
         )
 
+
         loss_function = nn.MSELoss()
 
-        model.train()
 
         dataset = torch.utils.data.TensorDataset(
             data,
         )
 
+
+        generator = None
+
+
+        if self.random_state is not None:
+
+            generator = torch.Generator()
+
+            generator.manual_seed(
+                self.random_state,
+            )
+
+
         loader = torch.utils.data.DataLoader(
+
             dataset,
-            batch_size=self.batch_size,
+
+            batch_size=min(
+                self.batch_size,
+                len(features),
+            ),
+
             shuffle=True,
+
+            generator=generator,
         )
+
+
+        model.train()
+
 
         for _ in range(
             self.epochs,
         ):
 
             for (
-                batch,
+                batch_x,
             ) in loader:
 
-                x = batch[0]
 
                 optimizer.zero_grad()
 
-                reconstructed = model(x)
+
+                reconstructed = model(
+                    batch_x,
+                )
+
 
                 loss = loss_function(
                     reconstructed,
-                    x,
+                    batch_x,
                 )
+
 
                 loss.backward()
 
                 optimizer.step()
 
+
         model.eval()
+
 
         with torch.no_grad():
 
             latent = model.encoder(
                 data,
             )
+
+
+            if self.normalize_output:
+
+                latent = torch.nn.functional.normalize(
+                    latent,
+                    p=2,
+                    dim=1,
+                )
+
+
+        if torch.isnan(latent).any():
+
+            raise RuntimeError(
+                "Autoencoder produced NaN values."
+            )
+
 
         return tuple(
             tuple(

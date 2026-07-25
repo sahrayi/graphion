@@ -75,11 +75,13 @@ class TSNE(
                 "max_iter must be greater than zero."
             )
 
+        self.output_dimension = output_dimension
         self.perplexity = perplexity
         self.learning_rate = learning_rate
         self.max_iter = max_iter
         self.metric = metric
         self.random_state = random_state
+
 
     def reduce_features(
         self,
@@ -92,6 +94,31 @@ class TSNE(
         if not features:
             return ()
 
+
+        matrix = np.asarray(
+            features,
+            dtype=float,
+        )
+
+
+        if matrix.ndim != 2:
+            raise ValueError(
+                "t-SNE requires a 2-dimensional feature matrix."
+            )
+
+
+        n_samples = matrix.shape[0]
+
+
+        if self.perplexity >= n_samples:
+            raise ValueError(
+                "perplexity must be smaller than "
+                "number of samples. "
+                f"Got perplexity={self.perplexity}, "
+                f"samples={n_samples}."
+            )
+
+
         model = SklearnTSNE(
             n_components=self.output_dimension,
             perplexity=self.perplexity,
@@ -101,14 +128,11 @@ class TSNE(
             random_state=self.random_state,
         )
 
-        matrix = np.asarray(
-            features,
-            dtype=float,
-        )
 
         reduced = model.fit_transform(
             matrix,
         )
+
 
         return tuple(
             tuple(
