@@ -1,8 +1,8 @@
-# Graphora
+# Graphion
 
-**Graphora** is a modular and extensible Python framework for building graph-based data processing pipelines.
+**Graphion** is a modular and extensible Python framework for building graph-based data processing pipelines.
 
-Instead of providing a single clustering or graph algorithm, Graphora offers reusable building blocks for constructing complete graph analytics workflows, from feature relations to graph construction, partition detection, refinement, reduction, and evaluation.
+Instead of providing a single clustering or graph algorithm, Graphion offers reusable building blocks for constructing complete graph analytics workflows, from feature relations to graph construction, partition detection, refinement, reduction, and evaluation.
 
 The framework is designed around interchangeable pipeline stages, allowing researchers and developers to combine different algorithms with a consistent interface.
 
@@ -12,7 +12,7 @@ The framework is designed around interchangeable pipeline stages, allowing resea
 
 # Features
 
-Graphora currently provides the following components:
+Graphion currently provides the following components:
 
 ### Relation Builders
 
@@ -130,7 +130,7 @@ Built-in evaluation utilities for:
 
 # Design Principles
 
-Graphora is designed around several core principles:
+Graphion is designed around several core principles:
 
 - Modular architecture
 - Consistent interfaces
@@ -147,7 +147,7 @@ Every processing stage follows a common execution interface, making it straightf
 # Project Structure
 
 ```
-graphora/
+Graphion/
 │
 ├── builders/
 │   ├── relation/
@@ -176,12 +176,12 @@ graphora/
 
 # Installation
 
-Graphora is currently under active development.
+Graphion is currently under active development.
 
 Clone the repository:
 
 ```bash
-git clone https://github.com/sahrayi/graphora.git
+git clone https://github.com/sahrayi/Graphion.git
 ```
 
 Install in editable mode:
@@ -209,7 +209,7 @@ Planned features include:
 
 # Related Projects
 
-Graphora serves as the foundation for higher-level graph analytics libraries.
+Graphion serves as the foundation for higher-level graph analytics libraries.
 
 For example:
 
