@@ -1,5 +1,5 @@
 """
-Graphora core error definitions.
+Graphion core error definitions.
 """
 
 from .models import (

@@ -1,5 +1,5 @@
 """
-Graphora relation metrics.
+Graphion relation metrics.
 
 This module exposes all built-in relation metrics.
 """

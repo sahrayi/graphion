@@ -1,5 +1,5 @@
 """
-Graphora core result objects.
+Graphion core result objects.
 """
 
 from .stage_result import StageResult

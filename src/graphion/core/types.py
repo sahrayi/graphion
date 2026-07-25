@@ -1,5 +1,5 @@
 """
-Common generic type variables used throughout Graphora.
+Common generic type variables used throughout Graphion.
 
 This module defines the shared type variables that are used by the
 core data models, interfaces, pipeline, and algorithms.

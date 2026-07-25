@@ -1,5 +1,5 @@
 """
-Graphora.
+Graphion.
 
 A graph-based framework for building semantic graphs,
 community detection, refinement, dimensionality reduction,

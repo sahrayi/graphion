@@ -1,5 +1,5 @@
 """
-Errors related to Graphora core data models.
+Errors related to Graphion core data models.
 """
 
 from __future__ import annotations

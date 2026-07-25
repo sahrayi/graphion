@@ -1,5 +1,5 @@
 """
-Tests for Graphora core interfaces.
+Tests for Graphion core interfaces.
 """
 
 from graphion.core.interfaces import (

@@ -136,9 +136,9 @@ class Walktrap(
         tuple[TId, ...],
     ]:
         """
-        Convert Graphora Graph into igraph.
+        Convert Graphion Graph into igraph.
 
-        Graphora Graph remains the source of truth.
+        Graphion Graph remains the source of truth.
         """
 
         node_ids = tuple(

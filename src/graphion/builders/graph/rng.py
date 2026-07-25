@@ -20,7 +20,7 @@ class RNG(BaseGraphBuilder[TId], Generic[TId]):
     Connects two nodes A and B if there is no
     third node C closer to both.
 
-    Graphora affinity convention:
+    Graphion affinity convention:
 
         higher affinity = closer
 

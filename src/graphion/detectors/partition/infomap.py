@@ -191,7 +191,7 @@ class Infomap(
         # Infomap may omit nodes that do not
         # participate in flow.
         #
-        # Graphora detectors must return a
+        # Graphion detectors must return a
         # complete partition of graph.nodes.
         for node in graph.nodes:
 

@@ -32,7 +32,7 @@ class Leiden(
     igraph backend.
 
     Graph direction is inherited from
-    Graphora Graph model.
+    Graphion Graph model.
 
     Properties
     ----------

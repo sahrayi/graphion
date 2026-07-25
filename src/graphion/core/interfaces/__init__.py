@@ -1,5 +1,5 @@
 """
-Graphora core interfaces.
+Graphion core interfaces.
 
 This module exposes all public interface contracts
 for pipeline stages and algorithms.

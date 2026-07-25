@@ -26,7 +26,7 @@ from .edge import Edge
 )
 class Graph(Generic[TId]):
     """
-    Immutable Graphora graph model.
+    Immutable Graphion graph model.
 
     Independent from external graph libraries.
     """

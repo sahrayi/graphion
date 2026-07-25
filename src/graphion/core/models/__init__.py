@@ -1,5 +1,5 @@
 """
-Graphora core data models.
+Graphion core data models.
 
 These immutable data models define the contracts exchanged between
 pipeline stages.

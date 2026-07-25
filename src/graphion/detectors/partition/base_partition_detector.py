@@ -58,7 +58,7 @@ class BasePartitionDetector(
     - algorithm-specific parameters
 
 
-    Graph conversion is handled by Graphora Graph model.
+    Graph conversion is handled by Graphion Graph model.
     Detectors should use:
 
         graph.to_networkx()
@@ -216,7 +216,7 @@ class BasePartitionDetector(
         """
         Execute partition detection.
 
-        Subclasses receive Graphora Graph.
+        Subclasses receive Graphion Graph.
 
         They should:
 

@@ -2,7 +2,7 @@
 Partition evaluation utilities.
 
 This module provides structural evaluation metrics
-for Graphora PartitionSet objects.
+for Graphion PartitionSet objects.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ class PartitionSetEvaluation:
     Parameters
     ----------
     partition_set:
-        Graphora PartitionSet instance.
+        Graphion PartitionSet instance.
 
     Notes
     -----

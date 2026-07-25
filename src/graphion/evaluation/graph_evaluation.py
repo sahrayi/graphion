@@ -12,7 +12,7 @@ from graphion.core.models import Graph
 
 
 class GraphEvaluation:
-    """Evaluate structural properties of a Graphora Graph."""
+    """Evaluate structural properties of a Graphion Graph."""
 
     def __init__(self, graph: Graph) -> None:
         self.graph = graph

@@ -17,7 +17,7 @@ class Edge(Generic[TId]):
     """
     Immutable graph edge.
 
-    An edge represents a connection between two nodes in a Graphora graph.
+    An edge represents a connection between two nodes in a Graphion graph.
 
     Parameters
     ----------

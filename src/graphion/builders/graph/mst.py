@@ -135,7 +135,7 @@ class MST(
         """
         Convert affinity score to Kruskal cost.
 
-        Since Graphora uses affinity where:
+        Since Graphion uses affinity where:
 
             higher = stronger relation
 
