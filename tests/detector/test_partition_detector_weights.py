@@ -4,12 +4,12 @@ Tests for weighted behavior of partition detectors.
 
 import pytest
 
-from graphora.core.models import (
+from graphion.core.models import (
     Edge,
     Graph,
 )
 
-from graphora.detectors.partition import (
+from graphion.detectors.partition import (
     Leiden,
     Louvain,
     Walktrap,

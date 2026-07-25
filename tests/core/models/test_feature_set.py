@@ -8,11 +8,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from graphora.core.errors import (
+from graphion.core.errors import (
     InvalidFeatureSetError,
 )
 
-from graphora.core.models import (
+from graphion.core.models import (
     FeatureSet,
 )
 

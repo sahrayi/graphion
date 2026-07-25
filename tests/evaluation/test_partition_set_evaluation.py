@@ -3,8 +3,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from graphora.core.models import PartitionSet
-from graphora.evaluation.partition_set_evaluation import PartitionSetEvaluation
+from graphion.core.models import PartitionSet
+from graphion.evaluation.partition_set_evaluation import PartitionSetEvaluation
 
 
 # ============================================================

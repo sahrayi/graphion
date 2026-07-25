@@ -3,9 +3,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from graphora.core.models import FeatureSet, PartitionSet
-from graphora.core.errors import InvalidPartitionSetError
-from graphora.evaluation.feature_partition_evaluation import FeaturePartitionEvaluation
+from graphion.core.models import FeatureSet, PartitionSet
+from graphion.core.errors import InvalidPartitionSetError
+from graphion.evaluation.feature_partition_evaluation import FeaturePartitionEvaluation
 
 
 # ============================================================

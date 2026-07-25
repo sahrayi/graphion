@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from graphora.builders.relation import (
+from graphion.builders.relation import (
     AngularSimilarity,
     BrayCurtisDistance,
     CanberraDistance,
@@ -22,7 +22,7 @@ from graphora.builders.relation import (
     WeightedJaccardSimilarity,
 )
 
-from graphora.core.models import FeatureSet
+from graphion.core.models import FeatureSet
 
 
 BUILDER_CONFIGS = [

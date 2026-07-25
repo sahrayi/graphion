@@ -2,7 +2,7 @@
 Tests for Graphora core interfaces.
 """
 
-from graphora.core.interfaces import (
+from graphion.core.interfaces import (
     GraphBuilder,
     GraphRefiner,
     PartitionDetector,
@@ -10,13 +10,13 @@ from graphora.core.interfaces import (
     Reducer,
     RelationBuilder,
 )
-from graphora.core.models import (
+from graphion.core.models import (
     FeatureSet,
     Graph,
     PartitionSet,
     RelationSet,
 )
-from graphora.core.results import StageResult
+from graphion.core.results import StageResult
 
 class DummyReducer:
     """

@@ -10,13 +10,13 @@ from __future__ import annotations
 
 import pytest
 
-from graphora.core.models import (
+from graphion.core.models import (
     Edge,
     Graph,
     PartitionSet,
 )
 
-from graphora.detectors.partition import (
+from graphion.detectors.partition import (
     Agglomerative,
     ConnectedComponents,
     FastGreedy,

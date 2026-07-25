@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 
-from graphora.builders.graph import (
+from graphion.builders.graph import (
     AdaptiveKNN,
     KNN,
     KNNThreshold,
@@ -19,7 +19,7 @@ from graphora.builders.graph import (
     WeightedKNN,
 )
 
-from graphora.core.models import Relation
+from graphion.core.models import Relation
 
 
 # ==================================================

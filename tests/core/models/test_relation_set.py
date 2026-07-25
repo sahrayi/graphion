@@ -6,8 +6,8 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from graphora.core.errors import InvalidRelationSetError
-from graphora.core.models import Relation, RelationSet
+from graphion.core.errors import InvalidRelationSetError
+from graphion.core.models import Relation, RelationSet
 
 
 def test_relation_set_creation() -> None:

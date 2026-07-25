@@ -6,8 +6,8 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from graphora.core.errors import InvalidPartitionSetError
-from graphora.core.models import PartitionSet
+from graphion.core.errors import InvalidPartitionSetError
+from graphion.core.models import PartitionSet
 
 
 def test_partition_set_creation() -> None:

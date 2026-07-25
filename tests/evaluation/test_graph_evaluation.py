@@ -4,9 +4,9 @@ import numpy as np
 import pytest
 import networkx as nx
 
-from graphora.core.models import Graph
-from graphora.core.models.edge import Edge
-from graphora.evaluation.graph_evaluation import GraphEvaluation
+from graphion.core.models import Graph
+from graphion.core.models.edge import Edge
+from graphion.evaluation.graph_evaluation import GraphEvaluation
 
 
 # ============================================================

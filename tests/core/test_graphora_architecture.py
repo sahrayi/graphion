@@ -19,22 +19,22 @@ import math
 
 import pytest
 
-from graphora.core.errors import (
+from graphion.core.errors import (
     InvalidEdgeError,
     InvalidGraphError,
 )
 
-from graphora.core.models import (
+from graphion.core.models import (
     Edge,
     Graph,
     PartitionSet,
 )
 
-from graphora.detectors.partition.base_partition_detector import (
+from graphion.detectors.partition.base_partition_detector import (
     BasePartitionDetector,
 )
 
-from graphora.detectors.partition.connected_components import (
+from graphion.detectors.partition.connected_components import (
     ConnectedComponents,
 )
 

@@ -7,8 +7,8 @@ from math import inf, nan
 
 import pytest
 
-from graphora.core.errors import InvalidEdgeError
-from graphora.core.models import Edge
+from graphion.core.errors import InvalidEdgeError
+from graphion.core.models import Edge
 
 
 def test_edge_creation() -> None:

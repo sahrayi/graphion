@@ -1,11 +1,11 @@
 import pytest
 
-from graphora.core.models import (
+from graphion.core.models import (
     Graph,
     Edge,
 )
 
-from graphora.detectors.partition import (
+from graphion.detectors.partition import (
     Spectral,
     Walktrap,
     Infomap,

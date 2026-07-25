@@ -7,8 +7,8 @@ from math import inf, nan
 
 import pytest
 
-from graphora.core.errors import InvalidRelationError
-from graphora.core.models import Relation
+from graphion.core.errors import InvalidRelationError
+from graphion.core.models import Relation
 
 
 def test_relation_creation() -> None:

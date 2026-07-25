@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from graphora.core.models import FeatureSet
+from graphion.core.models import FeatureSet
 
-from graphora.reducers import (
+from graphion.reducers import (
     IdentityReducer,
     PCA,
     RandomProjection,

@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 
 [project]
-name = "graphora"
+name = "graphion"
 version = "0.0.1"
 
 description = "A research framework for graph-based partitioning algorithms."
@@ -71,16 +71,16 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/sahrayi/graphora"
-Repository = "https://github.com/sahrayi/graphora"
-Issues = "https://github.com/sahrayi/graphora/issues"
+Homepage = "https://github.com/sahrayi/graphion"
+Repository = "https://github.com/sahrayi/graphion"
+Issues = "https://github.com/sahrayi/graphion/issues"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
 include-package-data = true
 
 [tool.setuptools.package-data]
-graphora = [
+graphion = [
     "py.typed",
 ]
 

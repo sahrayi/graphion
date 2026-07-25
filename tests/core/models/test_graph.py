@@ -6,8 +6,8 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from graphora.core.errors import InvalidGraphError
-from graphora.core.models import Edge, Graph
+from graphion.core.errors import InvalidGraphError
+from graphion.core.models import Edge, Graph
 
 
 def test_graph_creation() -> None:

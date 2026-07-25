@@ -5,8 +5,8 @@
 
 import pytest
 import math
-from graphora.core.models import FeatureSet
-from graphora.builders.relation.cosine_similarity import CosineSimilarity
+from graphion.core.models import FeatureSet
+from graphion.builders.relation.cosine_similarity import CosineSimilarity
 
 
 class TestCosineSimilarityCorrectness:

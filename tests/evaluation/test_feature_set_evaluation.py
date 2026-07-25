@@ -3,8 +3,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from graphora.core.models import FeatureSet
-from graphora.evaluation.feature_set_evaluation import FeatureSetEvaluation
+from graphion.core.models import FeatureSet
+from graphion.evaluation.feature_set_evaluation import FeatureSetEvaluation
 
 # ============================================================
 # Constants & Fixtures

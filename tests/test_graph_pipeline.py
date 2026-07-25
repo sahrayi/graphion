@@ -1,16 +1,16 @@
 import numpy as np
 
-from graphora.core.models import FeatureSet
+from graphion.core.models import FeatureSet
 
-from graphora.builders.relation.cosine_similarity import (
+from graphion.builders.relation.cosine_similarity import (
     CosineSimilarity,
 )
 
-from graphora.builders.graph.weighted_knn import (
+from graphion.builders.graph.weighted_knn import (
     WeightedKNN,
 )
 
-from graphora.detectors.partition.leiden import (
+from graphion.detectors.partition.leiden import (
     Leiden,
 )
 
