@@ -16,6 +16,7 @@ from .symmetric_knn import SymmetricKNN
 from .threshold import Threshold
 from .weighted_knn import WeightedKNN
 from .rng import RNG
+from .base_graph_builder import BaseGraphBuilder
 
 
 __all__ = [
@@ -30,4 +31,5 @@ __all__ = [
     "Threshold",
     "WeightedKNN",
     "RNG",
+    "BaseGraphBuilder",
 ]
