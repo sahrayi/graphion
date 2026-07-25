@@ -17,6 +17,8 @@ class CosineSimilarity(BaseNumericRelationBuilder):
         -1 <= score <= 1
     """
 
+    EPSILON = 1e-300
+
     @property
     def name(self) -> str:
         return "cosine"
@@ -30,7 +32,7 @@ class CosineSimilarity(BaseNumericRelationBuilder):
         self._validate_shapes(source, target)
 
         denominator = self._norm(source) * self._norm(target)
-        if denominator < self.ZERO_TOLERANCE:
+        if denominator < self.EPSILON:
             return 0.0
 
         numerator = sum(x * y for x, y in zip(source, target))
