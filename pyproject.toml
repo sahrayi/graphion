@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "graphora"
-version = "0.1.0"
+version = "0.0.1"
 
 description = "A research framework for graph-based partitioning algorithms."
 readme = "README.md"
