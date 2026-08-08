@@ -10,13 +10,11 @@ from abc import (
 )
 
 from collections.abc import (
-    Hashable,
     Iterable,
 )
 
 from typing import (
     Generic,
-    TypeVar,
 )
 
 from graphion.core.errors import InvalidGraphError
@@ -29,7 +27,6 @@ from graphion.core.models import (
     Graph,
     PartitionSet,
 )
-
 
 from graphion.core.types import (
     TId,
@@ -44,6 +41,7 @@ class BasePartitionDetector(
     """
     Base implementation for partition detectors.
 
+    ```
     Responsibilities:
 
     - validate graph compatibility
@@ -59,6 +57,7 @@ class BasePartitionDetector(
 
 
     Graph conversion is handled by Graphion Graph model.
+
     Detectors should use:
 
         graph.to_networkx()
@@ -112,17 +111,42 @@ class BasePartitionDetector(
         Detect graph partitions.
         """
 
+        print(
+            f"[Graphion] Partition detection started "
+            f"({self.__class__.__name__})"
+        )
+
+        print(
+            "[Graphion] Graph:"
+            f" nodes={len(graph.nodes)},"
+            f" edges={len(graph.edges)},"
+            f" directed={graph.directed}"
+        )
+
+
         self._validate_graph(
             graph,
         )
+
 
         raw_partitions = self._detect(
             graph,
         )
 
-        return self._normalize_partitions(
+
+        partition_set = self._normalize_partitions(
             raw_partitions,
         )
+
+
+        print(
+            "[Graphion] Partition detection finished:"
+            f" partitions={len(partition_set.partitions)}"
+        )
+
+
+        return partition_set
+
 
 
     # --------------------------------------------------

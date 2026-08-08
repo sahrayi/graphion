@@ -1,3 +1,21 @@
+"""
+Full graph pipeline test.
+
+FeatureSet
+    ->
+RelationBuilder
+    ->
+Affinity RelationSet
+    ->
+GraphBuilder
+    ->
+Graph
+    ->
+Leiden
+    ->
+Partition
+"""
+
 import numpy as np
 
 from graphion.core.models import FeatureSet
@@ -17,17 +35,21 @@ from graphion.detectors.partition.leiden import (
 
 def test_random_feature_graph_pipeline():
     """
-    Full pipeline test:
+    Test the complete Graphion pipeline.
 
-    Random feature matrix
-        ->
-    FeatureSet
-        ->
-    RelationSet
-        ->
-    Weighted KNN Graph
-        ->
-    Leiden Partition
+    Pipeline:
+
+        Random feature matrix
+            ->
+        FeatureSet
+            ->
+        CosineSimilarity
+            ->
+        Affinity RelationSet
+            ->
+        Weighted KNN Graph
+            ->
+        Leiden Partition
     """
 
     # --------------------------------------------------
@@ -50,7 +72,6 @@ def test_random_feature_graph_pipeline():
         768,
     )
 
-
     # --------------------------------------------------
     # 2. Create FeatureSet
     # --------------------------------------------------
@@ -68,7 +89,6 @@ def test_random_feature_graph_pipeline():
     assert len(feature_set) == 100
     assert feature_set.dimension == 768
 
-
     # --------------------------------------------------
     # 3. Build relations
     # --------------------------------------------------
@@ -81,13 +101,16 @@ def test_random_feature_graph_pipeline():
 
     assert len(relations) > 0
 
+    # RelationBuilder converts raw metric scores
+    # to affinities by default.
+    for relation in relations:
+        assert 0.0 <= relation.weight <= 1.0
 
     # --------------------------------------------------
     # 4. Build graph
     # --------------------------------------------------
 
     graph_builder = WeightedKNN(
-        relation_builder=relation_builder,
         k=10,
         symmetric=True,
     )
@@ -103,6 +126,9 @@ def test_random_feature_graph_pipeline():
 
     assert len(graph.edges) > 0
 
+    # GraphBuilder consumes affinities directly.
+    for edge in graph.edges:
+        assert 0.0 <= edge.weight <= 1.0
 
     # --------------------------------------------------
     # 5. Detect partitions
@@ -115,5 +141,4 @@ def test_random_feature_graph_pipeline():
     )
 
     assert partitions is not None
-
     assert len(partitions) > 0

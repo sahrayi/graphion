@@ -23,30 +23,15 @@ from graphion.core.models import Relation
 
 
 # ==================================================
-# Dummy relation builder
-# ==================================================
-
-
-class DummyRelationBuilder:
-    """
-    Dummy affinity converter for tests.
-    """
-
-    def affinity(
-        self,
-        raw_score: float,
-    ) -> float:
-        return raw_score
-
-
-# ==================================================
 # Test relations
 # ==================================================
-
 
 def build_test_relations():
     """
     Create deterministic relation set.
+
+    Relation weights are graph affinities and therefore
+    must already be normalized to the range [0, 1].
     """
 
     return [
@@ -114,7 +99,6 @@ def build_test_relations():
 # ==================================================
 # Builder configurations
 # ==================================================
-
 
 BUILDER_CONFIGS = [
     (
@@ -193,17 +177,18 @@ BUILDER_CONFIGS = [
 # Helpers
 # ==================================================
 
-
 def create_builder(
     builder_cls,
     kwargs,
 ):
     """
-    Create builder instance.
+    Create graph builder instance.
+
+    Graph builders operate directly on RelationSet
+    and do not require a RelationBuilder.
     """
 
     return builder_cls(
-        relation_builder=DummyRelationBuilder(),
         **kwargs,
     )
 
@@ -211,7 +196,6 @@ def create_builder(
 # ==================================================
 # Tests
 # ==================================================
-
 
 @pytest.mark.parametrize(
     "builder_cls,kwargs",
@@ -264,6 +248,7 @@ def test_graph_builder_has_no_self_loops(
     )
 
     for edge in graph.edges:
+
         assert edge.source != edge.target
 
 
@@ -276,7 +261,7 @@ def test_graph_builder_deterministic(
     kwargs,
 ):
     """
-    Same input should generate same graph.
+    Same input should generate the same graph.
     """
 
     relations = build_test_relations()
@@ -307,7 +292,7 @@ def test_graph_edges_have_valid_weights(
     kwargs,
 ):
     """
-    Edge weights must be valid affinities.
+    Edge weights must be valid graph affinities.
     """
 
     relations = build_test_relations()
@@ -322,4 +307,5 @@ def test_graph_edges_have_valid_weights(
     )
 
     for edge in graph.edges:
+
         assert 0.0 <= edge.weight <= 1.0

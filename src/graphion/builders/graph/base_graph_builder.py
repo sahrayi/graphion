@@ -20,7 +20,6 @@ from typing import (
 
 from graphion.core.interfaces import (
     GraphBuilder,
-    RelationBuilder,
 )
 
 from graphion.core.models import (
@@ -30,7 +29,7 @@ from graphion.core.models import (
 )
 
 from graphion.core.types import (
-    TId
+    TId,
 )
 
 
@@ -50,17 +49,18 @@ class BaseGraphBuilder(
     - deterministic output
 
     Subclasses define topology selection rules.
+
+    Relation weights are assumed to already represent
+    the final affinity values. GraphBuilder does not
+    calculate or transform relation weights.
     """
 
     def __init__(
         self,
         *,
-        relation_builder: RelationBuilder[TId],
         directed: bool = True,
         sort_key: Callable[[TId], object] | None = None,
     ) -> None:
-
-        self.relation_builder = relation_builder
 
         self._directed = directed
 
@@ -69,7 +69,6 @@ class BaseGraphBuilder(
             if sort_key is not None
             else str
         )
-
 
     # --------------------------------------------------
     # Properties
@@ -85,7 +84,6 @@ class BaseGraphBuilder(
 
         return self._directed
 
-
     # --------------------------------------------------
     # Build pipeline
     # --------------------------------------------------
@@ -96,16 +94,40 @@ class BaseGraphBuilder(
         nodes: Iterable[TId] | None = None,
     ) -> Graph[TId]:
 
+        print(
+            "[Graphion] Building graph..."
+        )
+
+        print(
+            f"[Graphion] Input relations: {len(relations)}"
+        )
+
         edges = self._build_edges(
             relations,
+        )
+
+        print(
+            f"[Graphion] Converted edges: {len(edges)}"
         )
 
         edges = self.post_process_edges(
             edges,
         )
 
+        print(
+            "[Graphion] Applying topology filter..."
+        )
+
+        before_filter = len(edges)
+
         edges = self.filter_edges(
             edges,
+        )
+
+        print(
+            f"[Graphion] Edges after filtering: "
+            f"{len(edges)} "
+            f"(removed {before_filter - len(edges)})"
         )
 
         graph_nodes = self._extract_nodes(
@@ -114,11 +136,12 @@ class BaseGraphBuilder(
         )
 
         # Important:
-        # Some topology algorithms (e.g. SNN)
-        # can legitimately produce zero edges.
+        # Some topology algorithms can legitimately
+        # produce zero edges.
         #
-        # In this case graph nodes must still
-        # be preserved from input relations.
+        # In this case graph nodes must still be
+        # preserved from the explicitly supplied nodes
+        # or from the input relations.
 
         if not graph_nodes:
 
@@ -126,13 +149,29 @@ class BaseGraphBuilder(
                 relations,
             )
 
-
-        return Graph(
+        graph = Graph(
             nodes=tuple(graph_nodes),
             edges=tuple(edges),
             directed=self.directed,
         )
 
+        print(
+            "[Graphion] Graph created"
+        )
+
+        print(
+            f"[Graphion] Nodes: {len(graph.nodes)}"
+        )
+
+        print(
+            f"[Graphion] Edges: {len(graph.edges)}"
+        )
+
+        print(
+            f"[Graphion] Directed: {graph.directed}"
+        )
+
+        return graph
 
     # --------------------------------------------------
     # Relation conversion
@@ -147,13 +186,10 @@ class BaseGraphBuilder(
             Edge(
                 source=relation.source,
                 target=relation.target,
-                weight=self.relation_builder.affinity(
-                    relation.weight,
-                ),
+                weight=relation.weight,
             )
             for relation in relations
         ]
-
 
     # --------------------------------------------------
     # Hooks
@@ -168,7 +204,6 @@ class BaseGraphBuilder(
         """
 
         return edges
-
 
     # --------------------------------------------------
     # Shared edge helpers
@@ -188,7 +223,6 @@ class BaseGraphBuilder(
             if edge.source != edge.target
         ]
 
-
     def merge_duplicates(
         self,
         edges: Iterable[Edge[TId]],
@@ -197,30 +231,12 @@ class BaseGraphBuilder(
         Merge duplicate directed edges.
 
         Keeps strongest affinity.
-
-        Example:
-
-            A -> B 0.7
-            A -> B 0.9
-
-        becomes:
-
-            A -> B 0.9
-
-
-        Reverse edges remain separate:
-
-            A -> B
-
-            B -> A
-
         """
 
         merged: dict[
             tuple[TId, TId],
             Edge[TId],
         ] = {}
-
 
         for edge in edges:
 
@@ -240,11 +256,9 @@ class BaseGraphBuilder(
 
                 merged[key] = edge
 
-
         return list(
             merged.values()
         )
-
 
     def apply_mutual(
         self,
@@ -252,21 +266,11 @@ class BaseGraphBuilder(
     ) -> list[Edge[TId]]:
         """
         Keep reciprocal directed edges only.
-
-        Example:
-
-            A -> B
-            B -> A
-
-        survive.
-
-        Direction is preserved.
         """
 
         edges = list(
             edges
         )
-
 
         pairs = {
             (
@@ -275,7 +279,6 @@ class BaseGraphBuilder(
             )
             for edge in edges
         }
-
 
         return [
             edge
@@ -287,7 +290,6 @@ class BaseGraphBuilder(
             in pairs
         ]
 
-
     def make_symmetric(
         self,
         edges: Iterable[Edge[TId]],
@@ -295,27 +297,14 @@ class BaseGraphBuilder(
         """
         Convert directed edges into undirected edges.
 
-        For:
-
-            A -> B (0.7)
-            B -> A (0.9)
-
-
-        returns:
-
-            A -- B (0.9)
-
-
-        Since Graph(directed=False)
-        treats edges as undirected,
-        only one normalized edge is returned.
+        When both directions exist, the strongest
+        affinity is preserved.
         """
 
         weights: dict[
             tuple[TId, TId],
             float,
         ] = {}
-
 
         for edge in edges:
 
@@ -324,11 +313,9 @@ class BaseGraphBuilder(
                 edge.target,
             )
 
-
             current = weights.get(
                 pair,
             )
-
 
             if (
                 current is None
@@ -336,7 +323,6 @@ class BaseGraphBuilder(
             ):
 
                 weights[pair] = edge.weight
-
 
         return [
             Edge(
@@ -356,7 +342,6 @@ class BaseGraphBuilder(
             )
         ]
 
-
     # --------------------------------------------------
     # Node extraction
     # --------------------------------------------------
@@ -366,19 +351,14 @@ class BaseGraphBuilder(
         edges: Iterable[Edge[TId]],
         nodes: Iterable[TId] | None = None,
     ) -> list[TId]:
-        """
-        Extract graph nodes from edges and optional input.
-        """
 
         node_set: set[TId] = set()
-
 
         if nodes is not None:
 
             node_set.update(
                 nodes,
             )
-
 
         for edge in edges:
 
@@ -390,26 +370,17 @@ class BaseGraphBuilder(
                 edge.target,
             )
 
-
         return sorted(
             node_set,
             key=self.sort_key,
         )
 
-
     def _extract_relation_nodes(
         self,
         relations: RelationSet[TId],
     ) -> list[TId]:
-        """
-        Extract nodes directly from relations.
-
-        Used when topology builder
-        produces no edges.
-        """
 
         node_set: set[TId] = set()
-
 
         for relation in relations:
 
@@ -421,12 +392,10 @@ class BaseGraphBuilder(
                 relation.target,
             )
 
-
         return sorted(
             node_set,
             key=self.sort_key,
         )
-
 
     # --------------------------------------------------
     # Algorithm hook
@@ -439,16 +408,8 @@ class BaseGraphBuilder(
     ) -> list[Edge[TId]]:
         """
         Select graph topology.
-
-        Examples:
-
-        - threshold
-        - KNN
-        - adaptive KNN
-        - MST
         """
         ...
-
 
     # --------------------------------------------------
     # Utility
@@ -459,9 +420,6 @@ class BaseGraphBuilder(
         source: TId,
         target: TId,
     ) -> tuple[TId, TId]:
-        """
-        Normalize undirected edge ordering.
-        """
 
         if self.sort_key(source) <= self.sort_key(target):
 
@@ -469,7 +427,6 @@ class BaseGraphBuilder(
                 source,
                 target,
             )
-
 
         return (
             target,

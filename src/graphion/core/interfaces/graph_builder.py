@@ -4,10 +4,7 @@ Graph builder interface.
 
 from __future__ import annotations
 
-from collections.abc import (
-    Hashable,
-    Iterable,
-)
+from collections.abc import Iterable
 
 from typing import (
     Generic,
@@ -48,7 +45,6 @@ class GraphBuilder(
     - graph directionality
     """
 
-
     @property
     def directed(
         self,
@@ -60,7 +56,6 @@ class GraphBuilder(
         the semantics of generated edges.
         """
         ...
-
 
     def build(
         self,
@@ -80,7 +75,6 @@ class GraphBuilder(
             Used to preserve isolated nodes.
         """
         ...
-
 
     def execute(
         self,

@@ -15,6 +15,7 @@ from graphion.core.models import (
     FeatureSet,
     RelationSet,
 )
+
 from graphion.core.results import StageResult
 
 from .stage import Stage
@@ -35,12 +36,15 @@ class RelationBuilder(
 
     - feature comparison
     - relation score generation
-    - raw metric conversion into graph affinity
+    - optional raw-score to affinity conversion
 
-    Relation.weight stores the raw metric output.
+    Relation.weight contains either:
 
-    Graph construction must never interpret raw scores
-    directly. It should always use affinity().
+    - the raw metric score, when ``as_affinity=False``
+    - the graph affinity, when ``as_affinity=True``
+
+    Graph builders consume relation weights as affinities
+    and must not perform metric-specific conversion.
     """
 
     @property
@@ -61,20 +65,32 @@ class RelationBuilder(
     def build(
         self,
         features: FeatureSet[TId],
+        *,
+        as_affinity: bool = True,
     ) -> RelationSet[TId]:
         """
-        Build relations from feature set.
+        Build relations from a feature set.
 
         Parameters
         ----------
         features:
             Feature vectors indexed by entity id.
 
+        as_affinity:
+            If True, convert the generated raw metric scores
+            into graph affinities before storing them in
+            Relation.weight.
+
+            If False, keep the raw metric scores unchanged.
+
+            Defaults to True.
+
         Returns
         -------
         RelationSet[TId]
 
-            Relations containing raw metric scores.
+            Relations containing either raw metric scores
+            or graph affinities, depending on ``as_affinity``.
         """
         ...
 
@@ -83,13 +99,18 @@ class RelationBuilder(
         raw_score: float,
     ) -> float:
         """
-        Convert raw metric score into graph affinity.
+        Convert a raw metric score into graph affinity.
+
+        Parameters
+        ----------
+        raw_score:
+            Raw metric output.
 
         Returns
         -------
         float
 
-            Normalized affinity:
+            Normalized graph affinity in the range:
 
                 0 <= affinity <= 1
         """
@@ -101,10 +122,15 @@ class RelationBuilder(
     ) -> StageResult[RelationSet[TId]]:
         """
         Execute relation building stage.
+
+        The stage execution uses the default behavior of
+        ``build()``, meaning relation weights are returned
+        as graph affinities.
         """
 
         return StageResult(
             output=self.build(
                 input_data,
+                as_affinity=True,
             ),
         )

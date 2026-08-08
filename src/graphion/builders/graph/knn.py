@@ -5,16 +5,13 @@ K-nearest neighbors graph construction algorithm.
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Hashable
-from typing import Generic, TypeVar
+from typing import Generic
 
 from graphion.core.models import Edge
 
 from .base_graph_builder import BaseGraphBuilder
 
-from graphion.core.types import (
-    TId
-)
+from graphion.core.types import TId
 
 
 class KNN(
